@@ -1,0 +1,6 @@
+[submodule "ceph-ansible"]
+	path = ceph-ansible
+	url = https://github.com/ceph/ceph-ansible.git
+[submodule "library"]
+	path = library
+	url = https://github.com/AcalephStorage/ansible-modules-extras.git
