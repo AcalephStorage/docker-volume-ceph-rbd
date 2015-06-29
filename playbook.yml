@@ -85,5 +85,8 @@
     sudo: yes
   - ceph_osd_pool: state=present name=data pgnum=32
     sudo: yes
-  - shell: wget -qO- https://get.docker.com/ | sh creates=/usr/bin/docker
+  # - shell: wget -qO- https://get.docker.com/ | sh creates=/usr/bin/docker
+  #   sudo: yes
+  # Install Docker experimental build
+  - shell: wget -qO- https://experimental.docker.com/ | sh creates=/usr/bin/docker
     sudo: yes
