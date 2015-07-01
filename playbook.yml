@@ -1,0 +1,93 @@
+---
+- hosts: ceph
+  vars:
+    locale: en_US.UTF-8
+    timezone: Asia/Manila
+  handlers:
+  - name: update tzdata
+    command: /usr/sbin/dpkg-reconfigure --frontend noninteractive tzdata
+    sudo: yes
+  tasks:
+  # Workaround for "stdin is not a tty", see https://github.com/mitchellh/vagrant/issues/1673
+  - lineinfile: dest=/root/.profile regexp='^(tty -s && )?mesg n$' line='tty -s && mesg n'
+    sudo: yes
+
+  - debug: msg={{ansible_env.LANG}}
+
+  - name: set locale to {{locale}}
+    command: /usr/sbin/update-locale LANG={{locale}} LC_ALL={{locale}}
+    sudo: yes
+    when: ansible_env.LANG != "{{locale}}"
+
+  - name: check /etc/timezone
+    command: cat /etc/timezone
+    register: cat_etc_timezone
+    changed_when: false
+
+  - debug: msg={{cat_etc_timezone.stdout}}
+
+  - name: set /etc/localtime to $timezone
+    command: cp /usr/share/zoneinfo/{{timezone}} /etc/localtime
+    sudo: yes
+    when: cat_etc_timezone.stdout != "{{timezone}}"
+
+  - name: set /etc/timezone to $timezone
+    copy: dest=/etc/timezone content='{{timezone}}'
+    sudo: yes
+    notify: update tzdata
+    when: cat_etc_timezone.stdout != "{{timezone}}"
+
+  - apt: pkg=linux-image-extra-{{ ansible_kernel }} state=present update_cache=yes cache_valid_time=3600
+    sudo: yes
+
+  - name: Install required packages
+    apt: pkg={{item}}
+    with_items:
+      - build-essential
+      - autotools-dev
+      - autoconf
+      - automake
+      - cdbs
+      - gcc
+      - g++
+      - git
+      - libboost-dev
+      - libedit-dev
+      - libssl-dev
+      - libtool
+      - libfcgi
+      - libfcgi-dev
+      - libfuse-dev
+      - linux-kernel-headers
+      - libcrypto++-dev
+      - libexpat1-dev
+      - pkg-config
+      - libcurl4-gnutls-dev
+      - uuid-dev
+      - libkeyutils-dev
+      - libgoogle-perftools-dev
+      - libatomic-ops-dev
+      - libaio-dev
+      - libgdata-common
+      - libgdata13
+      - libsnappy-dev
+      - libleveldb-dev
+      - libblkid-dev
+      - xfslibs-dev
+      - libboost-thread-dev
+      - libboost-program-options-dev
+      - libudev-dev
+      - libcrypto++-doc
+      - libcrypto++-utils
+      - librados-dev
+      - librbd-dev
+      - golang
+      - wget
+    sudo: yes
+  - ceph_osd_pool: state=present name=data pgnum=32
+    sudo: yes
+  # - shell: wget -qO- https://get.docker.com/ | sh creates=/usr/bin/docker
+  #   sudo: yes
+  # Install Docker experimental build
+  - shell: wget -qO- https://experimental.docker.com/ | sh creates=/usr/bin/docker
+    sudo: yes
