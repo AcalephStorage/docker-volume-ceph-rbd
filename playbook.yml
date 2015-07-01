@@ -80,6 +80,7 @@
       - libcrypto++-doc
       - libcrypto++-utils
       - librados-dev
+      - librbd-dev
       - golang
       - wget
     sudo: yes

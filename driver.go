@@ -11,6 +11,9 @@ import (
 	"sync"
 
 	"github.com/calavera/dkvolume"
+
+	"github.com/noahdesu/go-ceph/rados"
+	"github.com/noahdesu/go-ceph/rbd"
 )
 
 type volume struct {
@@ -67,12 +70,29 @@ func ensureFs(name string) dkvolume.Response {
 }
 
 func rbdExists(name string) (bool, error) {
-	out, _, err := execCommand("rbd", "ls")
+	conn, err := rados.NewConn()
 	if err != nil {
+		log.Fatal(err)
 		return false, err
 	}
-	for _, s := range strings.Split(string(out), "\n") {
-		if name == s {
+	conn.ReadDefaultConfigFile()
+	conn.Connect()
+	defer conn.Shutdown()
+
+	ioContext, err := conn.OpenIOContext("rbd")
+	if err != nil {
+		log.Fatal(err)
+		return false, err
+	}
+	defer ioContext.Destroy()
+
+	volumes, err := rbd.GetImageNames(ioContext)
+	if err != nil {
+		log.Fatal(err)
+		return false, err
+	}
+	for _, volumeName := range volumes {
+		if name == volumeName {
 			return true, nil
 		}
 	}
